@@ -38,8 +38,8 @@ char displayArrayBuffer[X_RESOLUTION][Y_RESOLUTION];
 void debug_fill_display_buffer();
 void print_display_buffer();
 void ray_shooter();
-double quadratic_equation_solver();
-bool does_ray_intersect(Vec3D lineUnitVec, Vec3D lineOriginPositionVec, Vec3D spherePositionVec, double sphereRadius);
+double position_of_intersect(Vec3D lineUnitVec, Vec3D lineOriginPosVec, Vec3D spherePosVec, double sphereRadius);
+double does_ray_intersect(Vec3D lineUnitVec, Vec3D lineOriginPositionVec, Vec3D spherePositionVec, double sphereRadius);
 void debug_does_ray_intersect_test();
 Vec3D convert_degrees_angle_to_unit_vector(DegreesAnglePair anglePair);
 DegreesAnglePair convert_unit_vector_to_degrees_angle(Vec3D unitVector);
@@ -130,30 +130,30 @@ void ray_shooter()
     }
 }
 
-double quadratic_equation_solver()
+double position_of_intersect(Vec3D lineUnitVec, Vec3D lineOriginPosVec, Vec3D spherePosVec, double sphereRadius)
 {
     //finds the position(s) of where the line intersects the sphere.
 
-    double a, b, c;
-    // a = (vector direction of line)^2
-    // b = 2 * ( vector direction of line * (origin of the line ))
-    // c =
+    double distanceAlongRay, tempDouble1;
+    Vec3D tempVec1;
 
-    // i) z = -b
-    // ii) y = b^2
-    // iii) w = 4a
-    // iv) v = w * c
-    // v) u = y - v
-    // vi) t = sqrt(v)
-    // vii) s = z + t
-    // viii) r = 2a
-    // ix) x1 = s/r
-    // x) s = z - t
-    // xi) x2 = s/r
+    // d = -(u * (o - c)) +/- sqrt(does_ray_intersect())
+
+    // o - c
+    tempVec1.xCom = lineOriginPosVec.xCom - spherePosVec.xCom;
+    tempVec1.yCom = lineOriginPosVec.yCom - spherePosVec.yCom;
+    tempVec1.zCom = lineOriginPosVec.zCom - spherePosVec.zCom;
+
+    // u * tempVec1
+    tempDouble1 = (lineUnitVec.xCom * tempVec1.xCom) + (lineUnitVec.yCom * tempVec1.yCom) + (lineUnitVec.zCom * tempVec1.zCom);
+
+    // d = -(tempDouble1) + sqrt(does_ray_intersect())
+    distanceAlongRay = -(tempDouble1) ; //Pickup from here********************************************************************
+
 
 }
 
-bool does_ray_intersect(Vec3D lineUnitVec, Vec3D lineOriginPosVec, Vec3D spherePosVec, double sphereRadius)
+double does_ray_intersect(Vec3D lineUnitVec, Vec3D lineOriginPosVec, Vec3D spherePosVec, double sphereRadius)
 {
     double intersectResult,dotProduct, dotProductSquared, lineSpherePosDiffDotProduct, temp1;
     Vec3D lineSpherePosDiffVec;
@@ -183,14 +183,7 @@ bool does_ray_intersect(Vec3D lineUnitVec, Vec3D lineOriginPosVec, Vec3D sphereP
 
     //***If this actually works I will eat a shoe.
 
-    if (intersectResult < 0)
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
+    return intersectResult;
 }
 
 void debug_does_ray_intersect_test()
