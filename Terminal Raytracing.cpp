@@ -38,7 +38,8 @@ char displayArrayBuffer[X_RESOLUTION][Y_RESOLUTION];
 void debug_fill_display_buffer();
 void print_display_buffer();
 void ray_shooter();
-double position_of_intersect(Vec3D lineUnitVec, Vec3D lineOriginPosVec, Vec3D spherePosVec, double sphereRadius);
+Vec3D normal_vector_of_point();
+Vec3D position_of_intersect(Vec3D lineUnitVec, Vec3D lineOriginPosVec, Vec3D spherePosVec, double sphereRadius);
 double does_ray_intersect(Vec3D lineUnitVec, Vec3D lineOriginPositionVec, Vec3D spherePositionVec, double sphereRadius);
 void debug_does_ray_intersect_test();
 Vec3D convert_degrees_angle_to_unit_vector(DegreesAnglePair anglePair);
@@ -130,12 +131,28 @@ void ray_shooter()
     }
 }
 
-double position_of_intersect(Vec3D lineUnitVec, Vec3D lineOriginPosVec, Vec3D spherePosVec, double sphereRadius)
+Vec3D normal_vector_of_point(Vec3D rayImpactSpherePosVec, Vec3D spherePosVec)
+{
+
+    Vec3D sphereImpactDirVec, impactNormalUnitVec;
+    double sphereImpactDirVecMagnitude, temp1;
+
+    sphereImpactDirVec.xCom = spherePosVec.xCom - rayImpactSpherePosVec.xCom;
+    sphereImpactDirVec.yCom = spherePosVec.yCom - rayImpactSpherePosVec.yCom; 
+    sphereImpactDirVec.zCom = spherePosVec.zCom - rayImpactSpherePosVec.zCom; 
+
+
+    temp1 = ((sphereImpactDirVec.xCom - rayImpactSpherePosVec.xCom)^2) + ((sphereImpactDirVec.yCom - rayImpactSpherePosVec.yCom)^2) + ((sphereImpactDirVec.zCom - rayImpactSpherePosVec.zCom)^2);
+    sphereImpactDirVecMagnitude = sqrt(temp1);
+
+}
+
+Vec3D position_of_intersect(Vec3D lineUnitVec, Vec3D lineOriginPosVec, Vec3D spherePosVec, double sphereRadius)
 {
     //finds the position(s) of where the line intersects the sphere.
 
     double distanceAlongRay, tempDouble1;
-    Vec3D tempVec1;
+    Vec3D tempVec1, impactPosVec;
 
     // d = -(u * (o - c)) +/- sqrt(does_ray_intersect())
 
@@ -147,9 +164,26 @@ double position_of_intersect(Vec3D lineUnitVec, Vec3D lineOriginPosVec, Vec3D sp
     // u * tempVec1
     tempDouble1 = (lineUnitVec.xCom * tempVec1.xCom) + (lineUnitVec.yCom * tempVec1.yCom) + (lineUnitVec.zCom * tempVec1.zCom);
 
-    // d = -(tempDouble1) + sqrt(does_ray_intersect())
-    distanceAlongRay = -(tempDouble1) ; //Pickup from here********************************************************************
+    //Check if - or + sqrt is closer to the origin.
+    if ( abs(-(tempDouble1) + sqrt(does_ray_intersect(lineUnitVec, lineOriginPosVec, spherePosVec, sphereRadius))) < abs(-(tempDouble1) - sqrt(does_ray_intersect(lineUnitVec, lineOriginPosVec, spherePosVec, sphereRadius))))
+    {
+        // d = -(tempDouble1) + sqrt(does_ray_intersect())
+        distanceAlongRay = -(tempDouble1) + sqrt(does_ray_intersect(lineUnitVec, lineOriginPosVec, spherePosVec, sphereRadius));
 
+    }
+    else
+    {
+        // d = -(tempDouble1) - sqrt(does_ray_intersect())
+        distanceAlongRay = -(tempDouble1) - sqrt(does_ray_intersect(lineUnitVec, lineOriginPosVec, spherePosVec, sphereRadius));
+
+    }
+
+    //Get impact position
+    impactPosVec.xCom = (lineUnitVec.xCom * distanceAlongRay) + lineOriginPosVec.xCom;
+    impactPosVec.yCom = (lineUnitVec.yCom * distanceAlongRay) + lineOriginPosVec.yCom;
+    impactPosVec.zCom = (lineUnitVec.zCom * distanceAlongRay) + lineOriginPosVec.zCom;
+
+    return impactPosVec;
 
 }
 
@@ -196,6 +230,15 @@ void debug_does_ray_intersect_test()
     double sphereRadius = SPHERE_RADIUS;
 
     cout << does_ray_intersect(lineUnitVec, lineOriginPosVec, spherePosVec, sphereRadius);
+
+    if (does_ray_intersect(lineUnitVec, lineOriginPosVec, spherePosVec, sphereRadius) > 0 )
+    {
+        cout << true;
+    }
+    else
+    {
+        cout << false;
+    }
 
 }
 
