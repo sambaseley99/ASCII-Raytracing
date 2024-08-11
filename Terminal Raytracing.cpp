@@ -28,7 +28,7 @@ const struct Vec3D CAMERA_POSITION_VEC = {-50,0,0};
 const struct Vec3D CAMERA_DIRECTION_VEC = {1,0,0};
 const struct Vec3D LIGHT_POSITION_VEC = {-50,-50,50};
 
-const string SHADING_MATERIAL_STRING = "@#0Oo:.";
+const string SHADING_MATERIAL_STRING = "@#HOo;:.";
 
 
 //Arrays & Vectors
@@ -45,6 +45,8 @@ Vec3D position_of_intersect(Vec3D lineUnitVec, Vec3D lineOriginPosVec, Vec3D sph
 double does_ray_intersect(Vec3D lineUnitVec, Vec3D lineOriginPositionVec, Vec3D spherePositionVec, double sphereRadius);
 Vec3D unit_vector_calculator (Vec3D startPointPosVec, Vec3D toPointPosVec);
 double normal_to_light_angle_calculator(Vec3D rayImpactPosVec, Vec3D lightPosVec, Vec3D spherePosVec);
+double irradience_calculator (double incidenceAngle, Vec3D rayImpactPosVec, Vec3D lightPosVec);
+Vec3D maximum_irradiance_pos_calculator (Vec3D sphereToLightUnitVec, double sphereRadius, Vec3D sphereCoordsPosVec);
 char character_shading (double lightValue, double maxLightValue);
 
 void debug_does_ray_intersect_test();
@@ -99,7 +101,7 @@ void print_display_buffer()
 void ray_shooter()
 {
     Vec3D rayImpactPosVec;
-    double lightAngle, maxLightAngle;
+    double lightAngle, maxLightAngle, lightAngleSquare, maxLightAngleSquare;
 
     maxLightAngle = 100 * (M_PI/180);
 
@@ -116,6 +118,14 @@ void ray_shooter()
     currentCameraAngle.xAngle = initialCameraAngle.xAngle - (X_CAMERA_ANGLE_LIMIT / 2);
     currentCameraAngle.yAngle = initialCameraAngle.yAngle - (Y_CAMERA_ANGLE_LIMIT / 2);
 
+    //Find the maximum irradiance position.
+    Vec3D maximumIrradiancePosVec = maximum_irradiance_pos_calculator (unit_vector_calculator(SPHERE_POSITION_VEC, LIGHT_POSITION_VEC), SPHERE_RADIUS, SPHERE_POSITION_VEC);
+    //Find the maximum irradiance.
+    double maximumIrradiance = irradience_calculator(normal_to_light_angle_calculator(maximumIrradiancePosVec, LIGHT_POSITION_VEC, SPHERE_POSITION_VEC), maximumIrradiancePosVec, LIGHT_POSITION_VEC);
+
+    cout << "MaximumIrradiancePosition = " << maximumIrradiancePosVec.xCom << "," << maximumIrradiancePosVec.yCom << "," << maximumIrradiancePosVec.zCom  << endl;
+    cout << "MaximumIrradiance = " << maximumIrradiance << endl;
+
     for (int y = 0; y < Y_RESOLUTION; y++)
     {
         for (int x = 0; x < X_RESOLUTION; x++)
@@ -126,9 +136,17 @@ void ray_shooter()
             if (does_ray_intersect(lineUnitVec, CAMERA_POSITION_VEC, SPHERE_POSITION_VEC, SPHERE_RADIUS) > 0)
             {
                 rayImpactPosVec =  position_of_intersect(lineUnitVec, CAMERA_POSITION_VEC, SPHERE_POSITION_VEC, SPHERE_RADIUS);
-                lightAngle = normal_to_light_angle_calculator(rayImpactPosVec, LIGHT_POSITION_VEC, SPHERE_POSITION_VEC);
+                //lightAngle = normal_to_light_angle_calculator(rayImpactPosVec, LIGHT_POSITION_VEC, SPHERE_POSITION_VEC);
+                //Find the impact point's irradiance.
+                double pointIrradiance = irradience_calculator(normal_to_light_angle_calculator(rayImpactPosVec, LIGHT_POSITION_VEC, SPHERE_POSITION_VEC), rayImpactPosVec, LIGHT_POSITION_VEC);
 
-                displayArrayBuffer[x][y] = character_shading(lightAngle, maxLightAngle);
+
+                //cout << pointIrradiance << endl;
+
+                //lightAngleSquare = sqrt(lightAngle);
+                //maxLightAngleSquare = sqrt(maxLightAngle);
+
+                displayArrayBuffer[x][y] = character_shading(pointIrradiance, maximumIrradiance);
 
             }
             else
@@ -248,8 +266,8 @@ Vec3D unit_vector_calculator (Vec3D startPointPosVec, Vec3D toPointPosVec)
 double normal_to_light_angle_calculator(Vec3D rayImpactPosVec, Vec3D lightPosVec, Vec3D spherePosVec)
 {
 
-    Vec3D lightUnitVec, normalUnitVec;
-    double dotProduct, angle;
+    Vec3D lightUnitVec, normalUnitVec, differenceUnitVec;
+    double dotProduct, angle, sumDifference;
 
     //Get unit vectors of impact point normal and vector to light.
     lightUnitVec = unit_vector_calculator(rayImpactPosVec, lightPosVec);
@@ -265,16 +283,44 @@ double normal_to_light_angle_calculator(Vec3D rayImpactPosVec, Vec3D lightPosVec
 
 }
 
+double irradience_calculator (double incidenceAngle, Vec3D rayImpactPosVec, Vec3D lightPosVec)
+{
+
+    double irradiance, lightDistance, lightIntensity;
+
+    lightIntensity = 1;
+    
+    lightDistance = sqrt(pow((lightPosVec.xCom - rayImpactPosVec.xCom), 2) + pow((lightPosVec.yCom - rayImpactPosVec.yCom), 2) + pow((lightPosVec.zCom - rayImpactPosVec.zCom), 2));
+
+    irradiance = (lightIntensity * cos(incidenceAngle)) / pow( lightDistance, 2 );
+
+    return irradiance;
+
+}
+
+Vec3D maximum_irradiance_pos_calculator (Vec3D sphereToLightUnitVec, double sphereRadius, Vec3D sphereCoordsPosVec)
+{
+
+    Vec3D maximumIrradiance;
+
+    maximumIrradiance.xCom = (sphereToLightUnitVec.xCom * sphereRadius) + sphereCoordsPosVec.xCom;
+    maximumIrradiance.yCom = (sphereToLightUnitVec.yCom * sphereRadius) + sphereCoordsPosVec.yCom;
+    maximumIrradiance.zCom = (sphereToLightUnitVec.zCom * sphereRadius) + sphereCoordsPosVec.zCom;
+
+    return maximumIrradiance;
+
+}
+
 char character_shading (double lightValue, double maxLightValue)
 {
 
-    
-    if ( abs(lightValue) > maxLightValue - (1 * (maxLightValue / 7)) ){ return SHADING_MATERIAL_STRING.at(6); }
-    else if ( abs(lightValue) > maxLightValue - (2 * (maxLightValue / 7)) ){ return SHADING_MATERIAL_STRING.at(5); }
-    else if ( abs(lightValue) > maxLightValue - (3 * (maxLightValue / 7)) ){ return SHADING_MATERIAL_STRING.at(4); }
-    else if ( abs(lightValue) > maxLightValue - (4 * (maxLightValue / 7)) ){ return SHADING_MATERIAL_STRING.at(3); }
-    else if ( abs(lightValue) > maxLightValue - (5 * (maxLightValue / 7)) ){ return SHADING_MATERIAL_STRING.at(2); }
-    else if ( abs(lightValue) > maxLightValue - (6 * (maxLightValue / 7)) ){ return SHADING_MATERIAL_STRING.at(1); }
+    if ( abs(lightValue) > maxLightValue - (1 * (maxLightValue / 7)) ){ return SHADING_MATERIAL_STRING.at(7); }
+    else if ( abs(lightValue) > maxLightValue - (2 * (maxLightValue / 7)) ){ return SHADING_MATERIAL_STRING.at(6); }
+    else if ( abs(lightValue) > maxLightValue - (3 * (maxLightValue / 7)) ){ return SHADING_MATERIAL_STRING.at(5); }
+    else if ( abs(lightValue) > maxLightValue - (4 * (maxLightValue / 7)) ){ return SHADING_MATERIAL_STRING.at(4); }
+    else if ( abs(lightValue) > maxLightValue - (5 * (maxLightValue / 7)) ){ return SHADING_MATERIAL_STRING.at(3); }
+    else if ( abs(lightValue) > maxLightValue - (6 * (maxLightValue / 7)) ){ return SHADING_MATERIAL_STRING.at(2); }
+    else if ( abs(lightValue) > maxLightValue - (7 * (maxLightValue / 7)) ){ return SHADING_MATERIAL_STRING.at(1); }
     else { return SHADING_MATERIAL_STRING.at(0); }
 }
 
